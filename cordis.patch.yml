@@ -1,0 +1,6 @@
+# Bundle patch for dsh-audio-alert: inserts the host-only reminder plugin into
+# the web profile roster. Install with
+#   dsh plugin --profile web add link:/home/wanzii/.dsh/local-plugins/dsh-audio-alert
+- insert:
+    - id: audio-alert
+      name: dsh-audio-alert
