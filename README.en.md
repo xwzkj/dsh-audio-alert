@@ -6,10 +6,11 @@ Host-side alert sounds for [DeepSeek Harness](https://github.com/deepseek-ai/dee
 
 It is not a push service. Nothing leaves the machine: no network, no bot token, no phone. It fits a host that sits next to you with a speaker attached, such as a home server.
 
-[![test](https://github.com/xwzkj/dsh-audio-alert/actions/workflows/test.yml/badge.svg)](https://github.com/xwzkj/dsh-audio-alert/actions/workflows/test.yml)
+The five tones are synthesized in JavaScript on first play (48 kHz/16-bit/stereo); no WAV files ship in the package. The npm tarball drops from 1.3 MB to a few dozen KB.
+
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/xwzkj/dsh-audio-alert/blob/main/LICENSE)
 
-> **AIGC disclosure.** The code, sound-generation script, tests and documentation were produced by an AI coding agent (DeepSeek Harness, model `deepseek-v4.1-flash`) under human requirements and review. Version 0.2.0 was exercised on a real machine: unit tests, real event triggers, and actual playback over Bluetooth and ALSA. The human maintainer decides what ships; the AI gives no warranty. Read the code before running it — in particular, it starts local audio-player subprocesses.
+> **AIGC disclosure.** The code, sound synthesis, tests and documentation were produced by an AI coding agent (DeepSeek Harness, model `deepseek-v4.1-flash`) under human requirements and review. Version 0.2.0 was exercised on a real machine: unit tests, real event triggers, and actual playback over Bluetooth and ALSA. The human maintainer decides what ships; the AI gives no warranty. Read the code before running it — in particular, it starts local audio-player subprocesses.
 
 ## Why host-side?
 
@@ -26,12 +27,12 @@ The trade-off is deliberate: no browser UI, no network, no extra service. You ge
 
 | Event | Sound | Behaviour |
 | --- | --- | --- |
-| Turn completed | `done.wav` | Two rising bell notes |
-| Turn failed | `error.wav` | Two falling low notes |
-| Turn blocked by policy | `error.wav` | Same tone as an error |
-| Output limit reached | `max-tokens.wav` | Two neutral notes |
-| **Approval waiting** | `approval.wav` | Three rising wooden notes; repeats until answered |
-| **Question / plan review waiting** | `question.wav` | Two rising notes; repeats until answered |
+| Turn completed | Two rising bell notes | Soft, not shrill |
+| Turn failed | Two falling low notes | Default error cue |
+| Turn blocked by policy | Same tone as an error | Controlled by `events.blocked` |
+| Output limit reached | Two neutral notes | Distinct from "completed" |
+| **Approval waiting** | Three rising wooden notes | Repeats until answered |
+| **Question / plan review waiting** | Two rising notes | Repeats until answered |
 
 The two waiting events sound immediately, then repeat after 45 s, 90 s, 3 min, and every 5 min after that — 12 repeats at most. The repeat stops as soon as the request is resolved. Subagent turns are silent by default (`includeSubagents: true` changes that); approvals and questions raised by subagents are always silent.
 
@@ -94,7 +95,7 @@ Keep `id: audio-alert`; that is how the override finds the row. If your patch al
 | `sink` | `''` | PipeWire/PulseAudio sink name; empty means the system default |
 | `device` | `''` | ALSA device for `aplay`, e.g. `plughw:CARD=PCH,DEV=0` |
 | `volume` | `0.6` | Linear volume, 0..1; `aplay` has no volume flag and ignores it |
-| `sounds` | see the event table | Per-event WAV path; relative paths resolve from the package root |
+| `sounds` | `{}` | Optional custom WAV overrides; empty means the built-in runtime synthesis. Relative paths resolve from the package root |
 | `events` | all `true` | Per-event switches: `done`, `approval`, `question`, `error`, `maxTokens`, `blocked` |
 | `approvalDelaysMs` | 45 s, 90 s, 3 m, then 5 m ×9 | Repeat delays for waiting events, in milliseconds; 12 entries total |
 | `includeSubagents` | `false` | Also play turn-end sounds for subagent sessions |
@@ -103,7 +104,7 @@ Keep `id: audio-alert`; that is how the override finds the row. If your patch al
 | `approvalBypassesQuiet` | `false` | Play approval, question, error and blocked at normal volume inside the quiet window; `done` and `maxTokens` still use `quietFactor` |
 | `verbose` | `false` | Write playback decisions to the host's stderr |
 
-`blocked` uses `error.wav` but has its own switch. Setting `events.blocked: false` silences only policy-blocked turns, not ordinary errors.
+`blocked` uses the error tone but has its own switch. Setting `events.blocked: false` silences only policy-blocked turns, not ordinary errors.
 
 ## Audio output
 
@@ -133,7 +134,7 @@ Run DSH as that user. If DSH runs as root, it will look at root's session, which
 ## Troubleshooting
 
 ```bash
-./test-alert.sh            # play every bundled sound through the selected player
+./test-alert.sh            # render to a temp dir and play every built-in tone
 ./test-alert.sh 80         # set ALSA Master to 80% first (aplay machines only)
 ```
 
@@ -142,7 +143,7 @@ The script is included in the npm package. If you installed the plugin as a depe
 If there is no sound, check in this order:
 
 1. `which pw-play paplay aplay` — is a player installed?
-2. `pw-play sounds/done.wav`, `paplay sounds/done.wav`, or `aplay sounds/done.wav` — does the player itself work?
+2. Render a WAV and play it manually: `node scripts/render-sounds.js /tmp/alerts`, then `pw-play /tmp/alerts/done.wav` (or `paplay` / `aplay`) — does the player itself work?
 3. `wpctl status` (PipeWire), `pactl list short sinks` (PulseAudio), or `alsamixer` — is the output muted or at zero?
 4. Set `verbose: true` and look for `[audio-alert]` lines in the host's stderr.
 5. If the sink name is wrong, find it with `wpctl status` / `pactl list short sinks`, or inspect `pw-dump` for the PipeWire node name.
@@ -155,22 +156,22 @@ If `pw-play` works in your shell but the plugin is silent, the host process prob
 - No network requests, telemetry, or remote services.
 - The plugin starts `pw-play`, `paplay`, or `aplay` as child processes, and runs `pw-dump` when `sink` is set and `pw-play` is the selected player.
 - `player` may be an absolute path, so it can start any executable you name. Only point it at a player you trust.
-- It reads the bundled WAV files or the paths in `sounds`, and nothing from session messages or workspace files.
+- It reads only its synthesis code or custom WAV paths in `sounds`; the first play writes a cache under `$XDG_CACHE_HOME/dsh-audio-alert` (default `~/.cache/dsh-audio-alert`), and it reads nothing from session messages or workspace files.
 - `verbose` logs event keys and player labels, not message content.
 - Review the code before installing it on a machine you care about; see the AIGC disclosure above. The plugin is MIT-licensed and has no runtime dependencies beyond Node and the system players.
 
 ## Development
 
-These commands are for a source checkout. The npm tarball ships only the runtime files (the plugin entry, sounds, the sound generator and `test-alert.sh`), not the test suite.
+These commands are for a source checkout. The npm tarball ships only the runtime files (the plugin entry, `sounds.js`, the render script and `test-alert.sh`), not the test suite.
 
 ```bash
-node --test                      # pure-function tests: quiet hours, config merge, argv, manifest
-python3 scripts/make-sounds.py   # regenerate the WAVs (stdlib only, 48 kHz/16-bit/stereo)
-./test-alert.sh                  # hear the result
-npm run check:pack               # inspect what would be published
+node --test                                  # 24 tests: quiet hours, config merge, argv, manifest, WAV synthesis
+node scripts/render-sounds.js /tmp/alerts    # render the five tones to WAV for listening
+./test-alert.sh                              # render to a temp dir and play them
+npm run check:pack                           # inspect what would be published
 ```
 
-The sound design lives in `bell`, `wood` and `soft_low` near the top of `scripts/make-sounds.py`. The plugin re-reads the WAV on every play, so changing a sound file does not require a restart. `test/manifest.test.js` guards the `dsh.bundle` manifest, the packaged files and the sound paths.
+The sound design lives in `bell`, `wood` and `softLow` in `sounds.js`. Rendered WAVs are cached under `$XDG_CACHE_HOME/dsh-audio-alert` (default `~/.cache/dsh-audio-alert`); bump `SOUND_VERSION` or delete that directory after changing the synthesis, then restart the host. `test/manifest.test.js` guards the `dsh.bundle` manifest and packaged files; `test/sounds.test.js` checks the WAV header, duration, determinism and cache.
 
 To submit this plugin to the awesome list, see [docs/awesome-dsh-plugin.md](https://github.com/xwzkj/dsh-audio-alert/blob/main/docs/awesome-dsh-plugin.md).
 

@@ -25,7 +25,7 @@ test('published files cover the runtime and docs', () => {
   const files = new Set(pkg.files)
   for (const entry of [
     'index.js',
-    'sounds',
+    'sounds.js',
     'scripts',
     'cordis.patch.yml',
     'README.md',
@@ -36,12 +36,12 @@ test('published files cover the runtime and docs', () => {
   ]) {
     assert.ok(files.has(entry), `package.json "files" is missing ${entry}`)
   }
+  assert.equal(files.has('sounds'), false, 'the package should not ship WAV files')
 })
 
-test('every default sound file exists', () => {
-  for (const [key, relative] of Object.entries(DEFAULTS.sounds)) {
-    assert.ok(existsSync(join(root, relative)), `${key}: ${relative} does not exist`)
-  }
+test('the default sounds are generated at runtime', () => {
+  assert.deepEqual(DEFAULTS.sounds, {})
+  assert.ok(existsSync(join(root, 'sounds.js')))
 })
 
 test('package metadata is publishable', () => {

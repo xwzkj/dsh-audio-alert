@@ -10,7 +10,7 @@
   },
   "files": [
     "index.js",
-    "sounds",
+    "sounds.js",
     "scripts",
     "cordis.patch.yml",
     "README.md",
@@ -21,6 +21,7 @@
   ],
   "scripts": {
     "test": "node --test",
+    "render:sounds": "node scripts/render-sounds.js",
     "check:pack": "npm pack --dry-run"
   },
   "engines": {

@@ -6,10 +6,11 @@
 
 它不是推送服务，也不联网：不需要机器人 token，不需要手机，不把任何内容发到外面。适合「机器就在旁边、接了个音箱」的场景，比如把 DSH 放在家里的服务器上。
 
-[![test](https://github.com/xwzkj/dsh-audio-alert/actions/workflows/test.yml/badge.svg)](https://github.com/xwzkj/dsh-audio-alert/actions/workflows/test.yml)
+五个提示音在第一次播放时由 `sounds.js` 用纯 JS 合成（48kHz/16-bit/立体声），包内不再带 WAV；npm 包从 1.3MB 降到几十 KB。
+
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/xwzkj/dsh-audio-alert/blob/main/LICENSE)
 
-> **AIGC 声明。** 代码、声音合成脚本、测试与文档由 AI 编码代理（DeepSeek Harness，模型 `deepseek-v4.1-flash`）在人类用户的需求与验收下完成。0.2.0 这一版在真实机器上做过验证：单元测试、真实事件触发、蓝牙与 ALSA 实际出声。人类负责决定取舍与是否发布，AI 不对正确性、稳定性或适用性作任何担保。请在使用前审阅代码——尤其是它会**在你的机器上启动音频播放器子进程**。
+> **AIGC 声明。** 代码、声音合成、测试与文档由 AI 编码代理（DeepSeek Harness，模型 `deepseek-v4.1-flash`）在人类用户的需求与验收下完成。0.2.0 这一版在真实机器上做过验证：单元测试、真实事件触发、蓝牙与 ALSA 实际出声。人类负责决定取舍与是否发布，AI 不对正确性、稳定性或适用性作任何担保。请在使用前审阅代码——尤其是它会**在你的机器上启动音频播放器子进程**。
 
 ## 为什么放在宿主侧
 
@@ -26,12 +27,12 @@
 
 | 事件 | 声音 | 行为 |
 | --- | --- | --- |
-| 回合正常结束 | `done.wav` | 两个上行的钟音 |
-| 回合出错 | `error.wav` | 两个下行的低音 |
-| 被策略拒绝（blocked） | `error.wav` | 与出错同音 |
-| 触及输出上限 | `max-tokens.wav` | 两声同音，中性 |
-| **等待审批** | `approval.wav` | 三记上行的木琴音，未处理会重播 |
-| **等待回答 / 计划评审** | `question.wav` | 两个上行的音，未处理会重播 |
+| 回合正常结束 | 两个上行的钟音 | 柔和，不刺耳 |
+| 回合出错 | 两个下行的低音 | 出错时的默认提示 |
+| 被策略拒绝（blocked） | 与出错同音 | 只受 `events.blocked` 控制 |
+| 触及输出上限 | 两声同音，中性 | 与“完成”区分 |
+| **等待审批** | 三记上行的木琴音 | 未处理会重播 |
+| **等待回答 / 计划评审** | 两个上行的音 | 未处理会重播 |
 
 两类等待事件先立即响一次，之后按 45 秒、90 秒、3 分钟、之后每 5 分钟重播，最多 12 次；你一处理就停。子代理的回合默认不响（`includeSubagents: true` 可以打开）；子代理发起的审批和提问始终不响，避免一个任务响十几次。
 
@@ -94,7 +95,7 @@ sudo systemctl restart dsh-web
 | `sink` | `''` | PipeWire/PulseAudio 的 sink 名；空 = 系统默认设备 |
 | `device` | `''` | 仅 `aplay` 的 ALSA 设备，如 `plughw:CARD=PCH,DEV=0` |
 | `volume` | `0.6` | 0..1 线性音量；`aplay` 没有音量参数，会忽略 |
-| `sounds` | 见上表 | 每个事件的声音文件；相对路径按包根目录解析 |
+| `sounds` | `{}` | 可选的自定义 WAV 覆盖；留空 = 运行时合成，相对路径按包根目录解析 |
 | `events` | 全 `true` | 单独开关：`done`、`approval`、`question`、`error`、`maxTokens`、`blocked` |
 | `approvalDelaysMs` | 45 秒、90 秒、3 分钟、之后 5 分钟 ×9 | 等待类提示音的重播间隔（毫秒），共 12 个 |
 | `includeSubagents` | `false` | 子代理回合结束时是否也响 |
@@ -103,7 +104,7 @@ sudo systemctl restart dsh-web
 | `approvalBypassesQuiet` | `false` | 时段内审批、提问、出错、blocked 仍用正常音量；`done` 和 `maxTokens` 仍乘 `quietFactor` |
 | `verbose` | `false` | 往宿主 stderr 打播放日志 |
 
-`blocked` 用 `error.wav`，但有自己的开关。只关 `events.blocked` 只会让「被策略拒绝」静音，不影响普通出错。
+`blocked` 用 `error` 的音型，但有自己的开关。只关 `events.blocked` 只会让「被策略拒绝」静音，不影响普通出错。
 
 ## 输出到哪个设备
 
@@ -133,7 +134,7 @@ loginctl enable-linger <user>
 ## 排障
 
 ```bash
-./test-alert.sh            # 用选中的播放器依次播放全部声音
+./test-alert.sh            # 生成到临时目录，用选中的播放器依次播放
 ./test-alert.sh 80         # 先把 ALSA Master 调到 80% 再播（仅 aplay 机器）
 ```
 
@@ -142,7 +143,7 @@ loginctl enable-linger <user>
 没声音时按顺序查：
 
 1. `which pw-play paplay aplay` —— 有没有可用的播放器；
-2. `pw-play sounds/done.wav`、`paplay sounds/done.wav` 或 `aplay sounds/done.wav` —— 播放器本身能不能出声；
+2. 先生成一份 WAV 再手动播放：`node scripts/render-sounds.js /tmp/alerts`，然后 `pw-play /tmp/alerts/done.wav`（或 `paplay` / `aplay`）—— 播放器本身能不能出声；
 3. `wpctl status`（PipeWire）、`pactl list short sinks`（PulseAudio）或 `alsamixer`（ALSA）—— 是不是静音或音量为 0；
 4. 设 `verbose: true`，看宿主 stderr 里有没有 `[audio-alert]` 开头的日志；
 5. sink 名不对时，用 `wpctl status` / `pactl list short sinks` 找，或从 `pw-dump` 里看 PipeWire 的 node 名；
@@ -155,22 +156,22 @@ loginctl enable-linger <user>
 - 不发起网络请求，没有遥测，没有远程服务。
 - 会启动 `pw-play`、`paplay` 或 `aplay` 子进程；配置了 `sink` 且播放器是 `pw-play` 时还会运行 `pw-dump`。
 - `player` 可以写绝对路径，也就是可以启动你指定的任意可执行文件。只指向你信任的播放器。
-- 只读取包内的 WAV 或 `sounds` 里配置的路径，不读取会话消息或工作区文件。
+- 只读取合成逻辑或 `sounds` 里配置的自定义 WAV；首次播放会在 `$XDG_CACHE_HOME/dsh-audio-alert`（默认 `~/.cache/dsh-audio-alert`）写缓存文件，不读取会话消息或工作区文件。
 - `verbose` 只记录事件键和播放器标签，不记录消息内容。
 - 在意的机器上请先审阅代码；AIGC 声明见上。MIT 许可，除 Node 和系统播放器外没有运行时依赖。
 
 ## 开发
 
-这些命令面向源码 checkout。npm 包里只带运行时文件（入口、声音、生成脚本和 `test-alert.sh`），不含测试。
+这些命令面向源码 checkout。npm 包里只带运行时文件（入口、`sounds.js`、渲染脚本和 `test-alert.sh`），不含测试。
 
 ```bash
-node --test                      # 纯函数单测：时段、配置合并、argv、manifest
-python3 scripts/make-sounds.py   # 重新生成 WAV（stdlib，48kHz/16-bit/立体声）
-./test-alert.sh                  # 直接听效果
-npm run check:pack               # 查看会发布哪些文件
+node --test                                  # 24 条：时段、配置合并、argv、manifest、WAV 合成
+node scripts/render-sounds.js /tmp/alerts    # 把五个提示音渲染成 WAV 试听
+./test-alert.sh                              # 生成到临时目录并直接播放
+npm run check:pack                           # 查看会发布哪些文件
 ```
 
-声音设计在 `scripts/make-sounds.py` 顶部的 `bell`、`wood`、`soft_low` 里；插件每次播放都重新读 WAV，改完不需要重启。`test/manifest.test.js` 会检查 `dsh.bundle` 清单、打包内容和声音路径。
+声音设计在 `sounds.js` 的 `bell`、`wood`、`softLow` 里。合成结果缓存在 `$XDG_CACHE_HOME/dsh-audio-alert`（默认 `~/.cache/dsh-audio-alert`）；改完把 `SOUND_VERSION` 加一，或删掉缓存目录，再重启宿主。`test/manifest.test.js` 检查 `dsh.bundle` 清单和打包内容，`test/sounds.test.js` 检查 WAV 头、时长、确定性和缓存。
 
 要收录到 awesome 列表，见 [docs/awesome-dsh-plugin.md](https://github.com/xwzkj/dsh-audio-alert/blob/main/docs/awesome-dsh-plugin.md)。
 

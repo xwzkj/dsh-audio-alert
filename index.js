@@ -17,6 +17,8 @@ import { accessSync, constants, existsSync } from 'node:fs'
 import { dirname, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { ensureSoundFile } from './sounds.js'
+
 /** Cordis 插件名。 */
 export const name = 'audio-alert'
 
@@ -56,14 +58,8 @@ export const DEFAULTS = {
   device: '',
   /** 0..1 线性音量；aplay 不支持，会被忽略。 */
   volume: 0.6,
-  /** 每个事件对应的声音文件；相对路径按插件目录解析。 */
-  sounds: {
-    done: 'sounds/done.wav',
-    question: 'sounds/question.wav',
-    error: 'sounds/error.wav',
-    maxTokens: 'sounds/max-tokens.wav',
-    approval: 'sounds/approval.wav',
-  },
+  /** 可选的自定义 WAV 覆盖；留空 = 运行时合成，相对路径按插件目录解析。 */
+  sounds: {},
   /** 各事件是否发声。 */
   events: {
     done: true,
@@ -311,8 +307,17 @@ export function apply(ctx, rawConfig) {
     if (!cfg.enabled || !playerPath) return
     const volume = Math.max(0, Math.min(1, Number(cfg.volume) * gainFactor))
     const raw = cfg.sounds[key]
-    if (typeof raw !== 'string' || raw === '') return
-    const file = isAbsolute(raw) ? raw : join(HERE, raw)
+    let file
+    if (typeof raw === 'string' && raw !== '') {
+      file = isAbsolute(raw) ? raw : join(HERE, raw)
+    } else {
+      try {
+        file = ensureSoundFile(key)
+      } catch (error) {
+        console.error(`[audio-alert] 生成 ${key} 提示音失败: ${error instanceof Error ? error.message : String(error)}`)
+        return
+      }
+    }
     try {
       accessSync(file, constants.R_OK)
     } catch {

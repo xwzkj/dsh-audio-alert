@@ -6,6 +6,13 @@ set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VOL="${1:-}"
+TMP="$(mktemp -d)" || exit 1
+trap 'rm -rf "$TMP"' EXIT
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "找不到 node，无法生成提示音" >&2
+  exit 1
+fi
 
 # headless / SSH 环境下没有这两个变量，pw-play 会连不上声音服务
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
@@ -26,9 +33,14 @@ if [[ -n "$VOL" ]] && command -v amixer >/dev/null 2>&1; then
   amixer sset Master "${VOL}%" unmute >/dev/null 2>&1 || true
 fi
 
+if ! node "$DIR/scripts/render-sounds.js" "$TMP" >/dev/null; then
+  echo "生成提示音失败" >&2
+  exit 1
+fi
+
 for name in done question error approval max-tokens; do
   echo "== $name"
-  "${PLAYER[@]}" "$DIR/sounds/$name.wav"
+  "${PLAYER[@]}" "$TMP/$name.wav"
   sleep 0.5
 done
 

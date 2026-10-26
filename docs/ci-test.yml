@@ -1,0 +1,37 @@
+# Template only: copy to .github/workflows/test.yml when the pushing token
+# has the `workflow` scope, or add it through the GitHub web UI.
+name: test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # No dependencies: the plugin only uses node: built-ins, so there is
+      # nothing to install and no lockfile to keep in sync.
+      - name: Unit tests
+        run: npm test
+
+      - name: Shell syntax
+        if: matrix.node == '24'
+        run: bash -n test-alert.sh
+
+      - name: Package contents
+        if: matrix.node == '24'
+        run: npm run check:pack
