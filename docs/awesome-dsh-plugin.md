@@ -83,7 +83,8 @@ Adds `xwzkj/dsh-audio-alert`, a host-side alert-sound plugin for Linux.
 - Turn end, error and output-limit events have their own tones; a policy-blocked turn uses the error tone.
 - Approval and question waits repeat on a 45s / 90s / 3m / 5m backoff (12
   repeats at most) and stop when the request is answered.
-- `package.json` declares `dsh.bundle`; the repo has working code and 24 tests.
+- `package.json` declares `dsh.bundle`; the repo has working code, 24 tests
+  and a GitHub Actions workflow.
 
 Only the entry file is added. READMEs are left to the generator.
 ```

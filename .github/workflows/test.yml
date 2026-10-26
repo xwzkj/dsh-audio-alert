@@ -1,5 +1,3 @@
-# Template only: copy to .github/workflows/test.yml when the pushing token
-# has the `workflow` scope, or add it through the GitHub web UI.
 name: test
 
 on:

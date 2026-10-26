@@ -8,6 +8,7 @@ It is not a push service. Nothing leaves the machine: no network, no bot token, 
 
 The five tones are synthesized in JavaScript on first play (48 kHz/16-bit/stereo); no 1.3 MB of WAV files ship in the package. The npm tarball is about 21 KB (down from 1.0 MB).
 
+[![test](https://github.com/xwzkj/dsh-audio-alert/actions/workflows/test.yml/badge.svg)](https://github.com/xwzkj/dsh-audio-alert/actions/workflows/test.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/xwzkj/dsh-audio-alert/blob/main/LICENSE)
 
 > **AIGC disclosure.** The code, sound synthesis, tests and documentation were produced by an AI coding agent (DeepSeek Harness, model `deepseek-v4.1-flash`) under human requirements and review. Version 0.2.0 was exercised on a real machine: unit tests, real event triggers, and actual playback over Bluetooth and ALSA. The human maintainer decides what ships; the AI gives no warranty. Read the code before running it — in particular, it starts local audio-player subprocesses.

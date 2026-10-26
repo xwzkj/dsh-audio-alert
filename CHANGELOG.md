@@ -4,7 +4,7 @@
 
 首个公开版本。
 
-- 发布资料：中英双语 README、npm `repository`/`homepage`/`bugs` 元数据、打包清单与 awesome-dsh-plugin 条目草稿
+- 发布资料：中英双语 README、npm `repository`/`homepage`/`bugs` 元数据、GitHub Actions、打包清单与 awesome-dsh-plugin 条目草稿
 - 默认输出改为系统默认音频设备：`pw-play` → `paplay` → `aplay` 自动选择，不再需要配置声卡
 - 播放器选择与参数拼装抽成纯函数（`pickPlayer` / `buildArgs` / `playerKind`），附 24 条单测（含打包清单与 WAV 合成）
 - `sink` 可选；指定但不存在时回落默认设备，再回落 `aplay`

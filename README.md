@@ -8,6 +8,7 @@
 
 五个提示音在第一次播放时由 `sounds.js` 用纯 JS 合成（48kHz/16-bit/立体声），包内不再带 1.3MB 的 WAV；npm 压缩包约 21KB。
 
+[![test](https://github.com/xwzkj/dsh-audio-alert/actions/workflows/test.yml/badge.svg)](https://github.com/xwzkj/dsh-audio-alert/actions/workflows/test.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/xwzkj/dsh-audio-alert/blob/main/LICENSE)
 
 > **AIGC 声明。** 代码、声音合成、测试与文档由 AI 编码代理（DeepSeek Harness，模型 `deepseek-v4.1-flash`）在人类用户的需求与验收下完成。0.2.0 这一版在真实机器上做过验证：单元测试、真实事件触发、蓝牙与 ALSA 实际出声。人类负责决定取舍与是否发布，AI 不对正确性、稳定性或适用性作任何担保。请在使用前审阅代码——尤其是它会**在你的机器上启动音频播放器子进程**。
