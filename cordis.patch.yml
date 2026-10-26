@@ -1,8 +1,9 @@
 # Bundle patch for dsh-audio-alert: inserts the host-only alert plugin into the
 # profile roster.
 #
-#   npm:   dsh plugin --profile web add dsh-audio-alert
-#   local: dsh plugin --profile web add link:<path-to-this-repo>
+#   npm:    dsh plugin --profile web add dsh-audio-alert
+#   github: dsh plugin --profile web add github:xwzkj/dsh-audio-alert
+#   local:  dsh plugin --profile web add link:<path-to-this-repo>
 - insert:
     - id: audio-alert
       name: dsh-audio-alert

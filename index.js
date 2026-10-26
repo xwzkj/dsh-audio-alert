@@ -277,19 +277,24 @@ export function apply(ctx, rawConfig) {
 
   /**
    * 依次尝试的播放方案：指定 sink → 系统默认 → 直连 ALSA。
+   *
+   * 默认设备始终排在 sink 后面作为兜底：`paplay --device` 在 sink 不存在时
+   * 会以非 0 退出，而 `pw-play --target` 对不存在的目标反而返回 0，所以
+   * 只有 pw-play 需要先查 `pw-dump`。不能因为配了 sink 就把默认设备丢掉，
+   * 否则一个过期的 sink 名会让提示音彻底不响。
    * @param {string} file - 声音文件。
    * @param {number} volume - 0..1。
    * @returns {{ player: string, args: string[], label: string }[]}
    */
   function attemptsFor(file, volume) {
     const attempts = []
-    const piped = playerKind(playerId) !== 'aplay'
-    if (cfg.sink && piped && sinkExists(cfg.sink)) {
+    const kind = playerKind(playerId)
+    const piped = kind !== 'aplay'
+    const sinkUsable = cfg.sink && piped && (kind !== 'pw-play' || sinkExists(cfg.sink))
+    if (sinkUsable) {
       attempts.push({ player: playerPath, args: buildArgs(playerId, file, { sink: cfg.sink, volume }), label: `sink ${cfg.sink}` })
     }
-    if (!cfg.sink || !piped || attempts.length === 0) {
-      attempts.push({ player: playerPath, args: buildArgs(playerId, file, { device: cfg.device, volume }), label: playerId })
-    }
+    attempts.push({ player: playerPath, args: buildArgs(playerId, file, { device: cfg.device, volume }), label: playerId })
     if (piped && cfg.device) {
       const aplay = which('aplay')
       if (aplay) attempts.push({ player: aplay, args: buildArgs('aplay', file, { device: cfg.device }), label: 'aplay' })
@@ -426,7 +431,7 @@ export function apply(ctx, rawConfig) {
    * @param {'approval' | 'question'} key - 对应提示音。
    */
   function waitForUser(event, key) {
-    if (cfg.events[key] === false) return
+    if (!cfg.enabled || cfg.events[key] === false) return
     ctx.on(event, async (request, next) => {
       if (request?.agent?.session?.header?.origin === 'subagent') return next()
       tones[key].start()

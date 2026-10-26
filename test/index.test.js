@@ -72,6 +72,16 @@ test('buildArgs: paplay 音量换算到 0..65536', () => {
   assert.deepEqual(buildArgs('paplay', '/tmp/a.wav', { volume: 0.5 }), ['--volume', '32768', '/tmp/a.wav'])
 })
 
+test('buildArgs: paplay 带 sink 时用 --device', () => {
+  assert.deepEqual(buildArgs('paplay', '/tmp/a.wav', { sink: 'alsa_output.usb', volume: 0.5 }), [
+    '--device',
+    'alsa_output.usb',
+    '--volume',
+    '32768',
+    '/tmp/a.wav',
+  ])
+})
+
 test('buildArgs: aplay 使用设备且没有音量参数', () => {
   assert.deepEqual(buildArgs('aplay', '/tmp/a.wav', { device: 'plughw:CARD=PCH,DEV=0', volume: 1 }), [
     '-D',

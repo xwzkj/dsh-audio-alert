@@ -14,10 +14,14 @@
     "scripts",
     "cordis.patch.yml",
     "README.md",
-    "LICENSE"
+    "README.en.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "test-alert.sh"
   ],
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "check:pack": "npm pack --dry-run"
   },
   "engines": {
     "node": ">=20"
@@ -29,11 +33,28 @@
     "notification",
     "audio",
     "alert",
+    "sound",
+    "chime",
+    "approval",
+    "linux",
     "pipewire",
     "pulseaudio",
     "alsa"
   ],
+  "author": "wanzii",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xwzkj/dsh-audio-alert.git"
+  },
+  "homepage": "https://github.com/xwzkj/dsh-audio-alert#readme",
+  "bugs": {
+    "url": "https://github.com/xwzkj/dsh-audio-alert/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
