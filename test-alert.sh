@@ -1,20 +1,36 @@
 #!/bin/bash
-# 依次播放四个提示音，用来确认喇叭 / 音量 / 设备路径。
-# 用法: ./test-alert.sh [音量百分比，可选]
-set -euo pipefail
+# 依次播放所有提示音，用来确认播放器 / 设备 / 音量。
+#   ./test-alert.sh          用系统默认设备
+#   ./test-alert.sh 80       先把 ALSA Master 调到 80%（仅 aplay）
+set -uo pipefail
 
-DEV="${ALSA_DEVICE:-plughw:CARD=PCH,DEV=0}"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VOL="${1:-}"
 
-if [[ -n "$VOL" ]]; then
-  amixer -c 1 sset Master "${VOL}%" unmute >/dev/null
+# headless / SSH 环境下没有这两个变量，pw-play 会连不上声音服务
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
+
+if command -v pw-play >/dev/null 2>&1; then
+  PLAYER=(pw-play)
+elif command -v paplay >/dev/null 2>&1; then
+  PLAYER=(paplay)
+elif command -v aplay >/dev/null 2>&1; then
+  PLAYER=(aplay -q)
+else
+  echo "找不到 pw-play / paplay / aplay" >&2
+  exit 1
 fi
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/sounds"
-for name in done error approval max-tokens; do
-  echo "== $name ($DEV)"
-  aplay -q -D "$DEV" "$DIR/$name.wav"
-  sleep 0.4
+if [[ -n "$VOL" ]] && command -v amixer >/dev/null 2>&1; then
+  amixer sset Master "${VOL}%" unmute >/dev/null 2>&1 || true
+fi
+
+for name in done question error approval max-tokens; do
+  echo "== $name"
+  "${PLAYER[@]}" "$DIR/sounds/$name.wav"
+  sleep 0.5
 done
-echo "完成。如果什么都没听到: 确认喇叭插在 3.5mm 口、Master 没静音，"
-echo "并检查 amixer -c 1 contents | grep -A2 'Headphone Jack' 是否为 on。"
+
+echo "播放器: ${PLAYER[*]}"
+echo "没声音就查: 系统音量、默认 sink（wpctl status）、以及 verbose: true 的宿主日志。"

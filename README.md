@@ -1,75 +1,96 @@
 # dsh-audio-alert
 
-宿主侧的“卧室喇叭”提醒插件。跑在 dsh 宿主进程里，**浏览器关掉也照样响**。
+宿主侧的提示音插件：跑在 dsh 宿主进程里，**浏览器关掉也照样响**。
 
-## 它在什么时候响
+它不是"推送"，而是本地发声——不需要联网、不需要机器人 token、不需要手机。适合"机器就在旁边、接了个音箱"的场景，比如把 dsh 放在家里的服务器上。
 
-| 事件 | 声音 |
-| --- | --- |
-| `turn/end` → `completed` | `sounds/done.wav`（柔和双音） |
-| `turn/end` → `error` | `sounds/error.wav`（下行低音） |
-| `turn/end` → `max-tokens` | `sounds/max-tokens.wav`（两声平调） |
-| `turn/end` → `blocked` | `sounds/error.wav`（审批策略直接拒绝，`approval: never` 时最常见的失败） |
-| `approval/request` | `sounds/approval.wav`（三连上行 pip），未处理时按 45s/90s/3m/5m… 重播 |
+## 什么时候响
 
-子代理会话的回合结束默认静音（`includeSubagents: false`），否则一个任务会响十几次。
+| 事件 | 声音 | 说明 |
+| --- | --- | --- |
+| 回合正常结束 | `done.wav` | 两个钟音上行，柔和不刺耳 |
+| 回合出错 | `error.wav` | 两个低音下行 |
+| 被策略拒绝（`blocked`） | `error.wav` | `approval: never` 时最常见的失败 |
+| 触及输出上限 | `max-tokens.wav` | 两声同音，中性 |
+| **等待审批** | `approval.wav` | 三记木琴上行，**没处理会重播** |
+| **等待回答 / 计划评审** | `question.wav` | 两个音上行五度，同样重播 |
 
-## 配置
+后两类是"阻塞等人"的事件：每 45s → 90s → 3m → 5m… 重播一次（最多 12 次），你一作答就停。子代理的回合默认不响，否则一个任务能响十几次。
 
-配置写在 profile 的 `cordis.patch.yml`（`~/.dsh/profiles/web/cordis.patch.yml`）里
-`id: audio-alert` 这一行。可用字段：
+## 安装
+
+```bash
+dsh plugin --profile web add dsh-audio-alert        # 发布到 npm 后
+dsh plugin --profile web add link:/path/to/repo     # 本地开发
+```
+
+装完重启 `dsh-web` 生效：`sudo systemctl restart dsh-web`。
+
+## 输出到哪个设备
+
+**默认就是系统默认音频设备**，不需要配置：
+
+- 有 PipeWire → `pw-play`，输出到当前默认 sink（你切到蓝牙音箱，提示音就跟过去）；
+- 有 PulseAudio → `paplay`；
+- 只有裸 ALSA → `aplay`，走 ALSA 的 `default`。
+
+只有想固定到某个设备时才需要填 `sink`（PipeWire/Pulse 的 sink 名，或 `aplay` 的 `-D` 设备）：
 
 ```yaml
 - id: audio-alert
   name: dsh-audio-alert
   config:
-    enabled: true
-    player: aplay                  # auto | pw-play | paplay | aplay
-    device: plughw:CARD=PCH,DEV=0  # 只对 aplay 生效
-    sink: ''                       # 只对 pw-play / paplay 生效
-    volume: 0.8                    # 只对 pw-play / paplay 生效（aplay 无音量参数）
-    quietHours: "23:30-08:00"      # 免打扰时段，留空关闭
-    approvalBypassesQuiet: true    # 免打扰期间审批仍然响
-    includeSubagents: false
-    approvalDelaysMs: [45000, 90000, 180000, 300000]
-    events: { done: true, error: true, maxTokens: true, blocked: true }
-    sounds:
-      done: sounds/done.wav
-      error: sounds/error.wav
-      maxTokens: sounds/max-tokens.wav
-      approval: sounds/approval.wav
-    verbose: false                 # true 时往宿主 stderr 打日志
+    sink: BDM3P                    # 可选：固定输出到这个 sink
+    volume: 0.6                    # 0..1，pw-play/paplay 支持；aplay 忽略
+    quietHours: "21:30-05:30"      # 降噪时段
+    quietFactor: 0.6               # 时段内所有提示音 ×0.6
 ```
 
-改完 `sudo systemctl restart dsh-web` 生效。插件是 `link:` 安装的，
-所以**改源码不需要重新 install**，重启即可。
+`aplay` 没有音量参数，此时 `volume` 不生效，请用 `amixer`/`alsamixer` 调系统音量。
 
-## 为什么是 `aplay` 而不是 `pw-play`
+## 全部配置项
 
-这台机器没有图形会话，也就没有 user systemd / D-Bus 会话，PipeWire 客户端连不上
-（`pw-play` 报 `can't connect`，ALSA 的 `default` 设备报 `Host is down`）。
-只有直接指定硬件设备才能出声：`plughw:CARD=PCH,DEV=0`（ALC892 模拟输出，也就是 3.5mm）。
-如果以后跑起了 WirePlumber，把 `player` 改回 `pw-play` + `sink` 即可。
+| 键 | 默认 | 说明 |
+| --- | --- | --- |
+| `enabled` | `true` | 总开关 |
+| `player` | `auto` | `auto` / `pw-play` / `paplay` / `aplay`，也可写绝对路径 |
+| `sink` | `''` | 指定输出 sink；空 = 系统默认 |
+| `device` | `''` | 仅 `aplay`：ALSA 设备，如 `plughw:CARD=PCH,DEV=0` |
+| `volume` | `0.6` | 0..1 线性音量（`aplay` 忽略） |
+| `sounds` | 见上表 | 每个事件的声音文件 |
+| `events` | 全 `true` | 单独关闭某类事件 |
+| `approvalDelaysMs` | `[45s,90s,3m,5m…]` | 等待类提示音的重播间隔 |
+| `includeSubagents` | `false` | 子代理回合结束是否也响 |
+| `quietHours` | `''` | 降噪时段，如 `"21:30-05:30"`；空 = 不启用 |
+| `quietFactor` | `0.6` | 时段内音量倍数 |
+| `approvalBypassesQuiet` | `false` | 时段内审批/出错是否用正常音量 |
+| `verbose` | `false` | 往宿主 stderr 打日志 |
 
-## 自检
+## 排障
 
 ```bash
-./test-alert.sh        # 依次播放四个声音
-./test-alert.sh 80     # 先把 Master 调到 80% 再播
+./test-alert.sh            # 依次播放全部声音
+./test-alert.sh 80         # 先把 ALSA Master 调到 80% 再播（仅 aplay 机器）
 ```
 
-音量和通路：
+没声音时按顺序查：
+
+1. `which pw-play paplay aplay` —— 有没有可用的播放器；
+2. 播放器能不能出声：`pw-play sounds/done.wav` / `aplay sounds/done.wav`；
+3. 是不是静音/音量为 0：`wpctl status`（PipeWire）或 `alsamixer`（ALSA）；
+4. `verbose: true` 后看宿主日志有没有 `[audio-alert] 播放 ...`。
+
+headless 机器上常见坑：systemd 服务没有 `XDG_RUNTIME_DIR`，导致 `pw-play`/`paplay` 连不上声音服务。本插件会自动补 `/run/user/<uid>` 与 `DBUS_SESSION_BUS_ADDRESS`，但前提是该用户有会话（`loginctl enable-linger <user>`）。
+
+## 开发
 
 ```bash
-amixer -c 1 sget Master                                  # 主音量 / 静音
-amixer -c 1 contents | grep -A2 'Headphone Jack'         # 插头是否识别为 on
+node --test          # 纯函数单测：时段判断、配置合并、参数拼装
+python3 scripts/make-sounds.py   # 重新生成 WAV（stdlib，48kHz/16-bit/立体声）
 ```
 
-## 重新生成声音
+声音设计在 `scripts/make-sounds.py` 顶部的 `bell / wood / soft_low` 里，改衰减长度、泛音比例即可，不需要重启——插件每次播放都重新读文件。
 
-```bash
-python3 scripts/make-sounds.py
-```
+## License
 
-只依赖标准库，48 kHz / 16-bit / 立体声（右声道延后 11ms 制造宽度，另有两级低幅回声）。
-峰值归一到 0.50，比早期版本轻约 5dB，配合系统音量 45% 使用。
+MIT

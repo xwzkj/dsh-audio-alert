@@ -1,7 +1,7 @@
 {
   "name": "dsh-audio-alert",
-  "version": "0.1.0",
-  "description": "Host-side audio alerts for DSH: a chime when a turn ends, a distinct tone when a turn errors, and a repeating reminder while an approval is pending.",
+  "version": "0.2.0",
+  "description": "Host-side alert sounds for DeepSeek Harness on Linux: a chime when a turn ends, distinct tones for errors, and repeating reminders while an approval or question waits — browser not required.",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -13,7 +13,25 @@
     "sounds",
     "scripts",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "notification",
+    "audio",
+    "alert",
+    "pipewire",
+    "pulseaudio",
+    "alsa"
   ],
   "license": "MIT",
   "dsh": {
