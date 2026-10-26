@@ -6,7 +6,7 @@
 
 它不是推送服务，也不联网：不需要机器人 token，不需要手机，不把任何内容发到外面。适合「机器就在旁边、接了个音箱」的场景，比如把 DSH 放在家里的服务器上。
 
-五个提示音在第一次播放时由 `sounds.js` 用纯 JS 合成（48kHz/16-bit/立体声），包内不再带 WAV；npm 包从 1.3MB 降到几十 KB。
+五个提示音在第一次播放时由 `sounds.js` 用纯 JS 合成（48kHz/16-bit/立体声），包内不再带 1.3MB 的 WAV；npm 压缩包约 21KB。
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/xwzkj/dsh-audio-alert/blob/main/LICENSE)
 

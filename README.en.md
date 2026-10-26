@@ -6,7 +6,7 @@ Host-side alert sounds for [DeepSeek Harness](https://github.com/deepseek-ai/dee
 
 It is not a push service. Nothing leaves the machine: no network, no bot token, no phone. It fits a host that sits next to you with a speaker attached, such as a home server.
 
-The five tones are synthesized in JavaScript on first play (48 kHz/16-bit/stereo); no WAV files ship in the package. The npm tarball drops from 1.3 MB to a few dozen KB.
+The five tones are synthesized in JavaScript on first play (48 kHz/16-bit/stereo); no 1.3 MB of WAV files ship in the package. The npm tarball is about 21 KB (down from 1.0 MB).
 
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/xwzkj/dsh-audio-alert/blob/main/LICENSE)
 
