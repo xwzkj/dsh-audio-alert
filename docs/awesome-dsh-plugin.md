@@ -16,8 +16,8 @@ url: https://github.com/xwzkj/dsh-audio-alert
 name: xwzkj/dsh-audio-alert
 category: notify
 description:
-  en: 'Host-side alert sounds for DeepSeek Harness on Linux: a chime when a turn ends, separate tones for errors and output limits, and repeating reminders while an approval or question waits. Plays through PipeWire, PulseAudio or ALSA, so it still sounds with the browser closed.'
-  zh: '跑在 DSH 宿主进程里的 Linux 提示音：回合结束、出错、触及输出上限各有音色；审批或提问无人处理时按退避重播。通过 PipeWire、PulseAudio 或 ALSA 发声，浏览器关掉也照样响。'
+  en: "Host-side session alerts for DSH Web on Linux: tones played through the server's audio device when a turn ends, fails, or waits for approval or an answer — no browser needed."
+  zh: 'Linux 上 DSH Web 的宿主侧会话提醒：回合结束、出错或等待审批/回答时，服务器音频设备直接发声，浏览器不用开。'
 ```
 
 The English description contains `: `, so it **must** stay quoted. An
