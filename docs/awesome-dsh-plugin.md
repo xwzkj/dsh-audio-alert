@@ -17,7 +17,7 @@ name: xwzkj/dsh-audio-alert
 category: notify
 description:
   en: "Host-side session alerts for DSH Web on Linux: tones played through the server's audio device when a turn ends, fails, or waits for approval or an answer — no browser needed."
-  zh: 'Linux 上 DSH Web 的宿主侧会话提醒：回合结束、出错或等待审批/回答时，服务器音频设备直接发声，浏览器不用开。'
+  zh: 'Linux 上 DSH Web 的宿主侧会话提醒：回合结束、出错或等待审批/回答时，服务器音频设备直接发声，无需打开浏览器。'
 ```
 
 The English description contains `: `, so it **must** stay quoted. An
