@@ -437,15 +437,22 @@ export function apply(ctx, rawConfig) {
    */
   function waitForUser(event, key) {
     if (!cfg.enabled || cfg.events[key] === false) return
-    ctx.on(event, async (request, next) => {
-      if (request?.agent?.session?.header?.origin === 'subagent') return next()
-      tones[key].start()
-      try {
-        return await next()
-      } finally {
-        tones[key].stop()
-      }
-    })
+    // 审批/提问是挂在 agent scope 上的 waterfall；不加 global 时，插件自己的
+    // context 会被过滤掉，永远收不到事件。
+    ctx.on(
+      event,
+      async (request, next) => {
+        log('等待事件', event, request?.agent?.session?.header?.origin ?? 'unknown')
+        if (request?.agent?.session?.header?.origin === 'subagent') return next()
+        tones[key].start()
+        try {
+          return await next()
+        } finally {
+          tones[key].stop()
+        }
+      },
+      { global: true },
+    )
   }
 
   waitForUser('approval/request', 'approval')

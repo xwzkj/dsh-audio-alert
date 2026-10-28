@@ -1,6 +1,6 @@
 {
   "name": "dsh-audio-alert",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Host-side alert sounds for DeepSeek Harness on Linux: a chime when a turn ends, distinct tones for errors, and repeating reminders while an approval or question waits — browser not required.",
   "type": "module",
   "main": "index.js",

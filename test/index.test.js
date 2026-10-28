@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { buildArgs, inQuietHours, pickPlayer, playerKind, resolveConfig, DEFAULTS } from '../index.js'
+import { apply, buildArgs, inQuietHours, pickPlayer, playerKind, resolveConfig, DEFAULTS } from '../index.js'
 
 test('inQuietHours: 跨零点窗口', () => {
   const night = (h, m) => new Date(2026, 9, 26, h, m)
@@ -97,4 +97,21 @@ test('playerKind: 绝对路径与带后缀的名字都能归一', () => {
   assert.equal(playerKind('/tmp/fake-pw-play'), 'pw-play')
   assert.equal(playerKind('aplay'), 'aplay')
   assert.equal(playerKind('/opt/unknown'), '/opt/unknown')
+})
+
+test('等待类事件使用 global 监听，避免被 agent scope 过滤', () => {
+  const registrations = []
+  const ctx = {
+    on: (event, listener, options) => {
+      registrations.push({ event, listener, options })
+      return () => true
+    },
+    effect: (fn) => fn(),
+  }
+  apply(ctx, { player: process.execPath, verbose: false })
+  for (const event of ['approval/request', 'user-questions/request']) {
+    const registration = registrations.find((item) => item.event === event)
+    assert.ok(registration, `${event} was not registered`)
+    assert.deepEqual(registration.options, { global: true })
+  }
 })
