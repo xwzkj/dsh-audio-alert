@@ -166,7 +166,7 @@ If `pw-play` works in your shell but the plugin is silent, the host process prob
 These commands are for a source checkout. The npm tarball ships only the runtime files (the plugin entry, `sounds.js`, the render script and `test-alert.sh`), not the test suite.
 
 ```bash
-node --test                                  # 24 tests: quiet hours, config merge, argv, manifest, WAV synthesis
+node --test                                  # 25 tests: quiet hours, config merge, argv, manifest, WAV synthesis
 node scripts/render-sounds.js /tmp/alerts    # render the five tones to WAV for listening
 ./test-alert.sh                              # render to a temp dir and play them
 npm run check:pack                           # inspect what would be published

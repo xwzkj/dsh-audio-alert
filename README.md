@@ -166,7 +166,7 @@ loginctl enable-linger <user>
 这些命令面向源码 checkout。npm 包里只带运行时文件（入口、`sounds.js`、渲染脚本和 `test-alert.sh`），不含测试。
 
 ```bash
-node --test                                  # 24 条：时段、配置合并、argv、manifest、WAV 合成
+node --test                                  # 25 条：时段、配置合并、argv、manifest、WAV 合成
 node scripts/render-sounds.js /tmp/alerts    # 把五个提示音渲染成 WAV 试听
 ./test-alert.sh                              # 生成到临时目录并直接播放
 npm run check:pack                           # 查看会发布哪些文件

@@ -2,9 +2,9 @@
 
 ## 0.2.1 — 2026-10-28
 
-- 修复审批/提问提示音不触发：这两个事件挂在 agent scope 上，监听时必须带 `{ global: true }`
+- 修复审批/提问提示音不触发：这两个事件挂在 agent scope 上，监听时必须带 `{ global: true, prepend: true }`
 - 等待事件增加 verbose 日志（`等待事件 approval/request ...`）
-- 新增回归测试，锁住 global 监听选项
+- 新增 global/prepend 监听回归测试（共 25 条）
 
 ## 0.2.0 — 2026-10-26
 

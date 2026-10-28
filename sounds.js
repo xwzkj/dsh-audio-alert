@@ -252,7 +252,10 @@ export function ensureSoundFile(key, options = {}) {
     try {
       mkdirSync(dir, { recursive: true })
       const target = join(dir, `${stem}-v${SOUND_VERSION}.wav`)
-      if (existsSync(target) && statSync(target).size > 44) return target
+      if (existsSync(target)) {
+        const info = statSync(target)
+        if (info.isFile() && info.size > 44) return target
+      }
       const temp = `${target}.${process.pid}.${Date.now()}.tmp`
       writeSoundFile(key, temp)
       renameSync(temp, target)

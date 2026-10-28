@@ -236,7 +236,11 @@ export function apply(ctx, rawConfig) {
   const playerPath = which(playerId)
   log('播放器', playerId, cfg.sink ? `优先 sink: ${cfg.sink}` : '（系统默认设备）')
 
-  const gain = () => (inQuietHours(cfg.quietHours) && !cfg.approvalBypassesQuiet ? Number(cfg.quietFactor) : 1)
+  const gain = () => {
+    if (!inQuietHours(cfg.quietHours) || cfg.approvalBypassesQuiet) return 1
+    const factor = Number(cfg.quietFactor)
+    return Number.isFinite(factor) ? factor : 0.6
+  }
 
   /** pw-dump 探测 sink 是否存在的缓存。 */
   let sinkCache = { at: 0, ok: false }
@@ -305,7 +309,9 @@ export function apply(ctx, rawConfig) {
    */
   function play(key, gainFactor = 1) {
     if (!cfg.enabled || !playerPath) return
-    const volume = Math.max(0, Math.min(1, Number(cfg.volume) * gainFactor))
+    const baseVolume = Number(cfg.volume)
+    const factor = Number.isFinite(gainFactor) ? gainFactor : 1
+    const volume = Math.max(0, Math.min(1, (Number.isFinite(baseVolume) ? baseVolume : 0.6) * factor))
     const raw = cfg.sounds[key]
     let file
     if (typeof raw === 'string' && raw !== '') {
@@ -361,8 +367,10 @@ export function apply(ctx, rawConfig) {
     if (!cfg.enabled || !event || event.type !== 'turn/end') return
     if (!cfg.includeSubagents && session?.header?.origin === 'subagent') return
 
-    const quietGain = inQuietHours(cfg.quietHours) ? Number(cfg.quietFactor) : 1
-    const loudGain = inQuietHours(cfg.quietHours) && !cfg.approvalBypassesQuiet ? Number(cfg.quietFactor) : 1
+    const quietFactor = Number(cfg.quietFactor)
+    const factor = Number.isFinite(quietFactor) ? quietFactor : 0.6
+    const quietGain = inQuietHours(cfg.quietHours) ? factor : 1
+    const loudGain = inQuietHours(cfg.quietHours) && !cfg.approvalBypassesQuiet ? factor : 1
 
     const kind = event.data?.reason?.kind
     if (kind === 'completed' && cfg.events.done) play('done', quietGain)
@@ -444,14 +452,22 @@ export function apply(ctx, rawConfig) {
       async (request, next) => {
         log('等待事件', event, request?.agent?.session?.header?.origin ?? 'unknown')
         if (request?.agent?.session?.header?.origin === 'subagent') return next()
-        tones[key].start()
+        try {
+          tones[key].start()
+        } catch (error) {
+          log('提示音启动失败', error instanceof Error ? error.message : String(error))
+        }
         try {
           return await next()
         } finally {
-          tones[key].stop()
+          try {
+            tones[key].stop()
+          } catch (error) {
+            log('提示音停止失败', error instanceof Error ? error.message : String(error))
+          }
         }
       },
-      { global: true },
+      { global: true, prepend: true },
     )
   }
 

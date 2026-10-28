@@ -112,6 +112,6 @@ test('等待类事件使用 global 监听，避免被 agent scope 过滤', () =>
   for (const event of ['approval/request', 'user-questions/request']) {
     const registration = registrations.find((item) => item.event === event)
     assert.ok(registration, `${event} was not registered`)
-    assert.deepEqual(registration.options, { global: true })
+    assert.deepEqual(registration.options, { global: true, prepend: true })
   }
 })

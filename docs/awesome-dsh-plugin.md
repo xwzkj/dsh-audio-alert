@@ -45,7 +45,7 @@ is enough, and the repository installs from source without a build step.
       `dsh.bundle.patch: "./cordis.patch.yml"` and the file exists. This is the
       most common reason submissions are rejected; it is already done here.
 - [ ] **Confirm the code is real and working.** This repository has the host
-      plugin, five runtime-synthesized tones, 24 tests (unit, manifest and WAV
+      plugin, five runtime-synthesized tones, 25 tests (unit, manifest and WAV
       synthesis). No build step, no dependencies.
 - [ ] **Publish to npm (recommended, not required).** The name
       `dsh-audio-alert` was unclaimed on 2026-10-26. From this directory:
@@ -83,7 +83,7 @@ Adds `xwzkj/dsh-audio-alert`, a host-side alert-sound plugin for Linux.
 - Turn end, error and output-limit events have their own tones; a policy-blocked turn uses the error tone.
 - Approval and question waits repeat on a 45s / 90s / 3m / 5m backoff (12
   repeats at most) and stop when the request is answered.
-- `package.json` declares `dsh.bundle`; the repo has working code, 24 tests
+- `package.json` declares `dsh.bundle`; the repo has working code, 25 tests
   and a GitHub Actions workflow.
 
 Only the entry file is added. READMEs are left to the generator.

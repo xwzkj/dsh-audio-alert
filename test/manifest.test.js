@@ -42,6 +42,7 @@ test('published files cover the runtime and docs', () => {
 test('the default sounds are generated at runtime', () => {
   assert.deepEqual(DEFAULTS.sounds, {})
   assert.ok(existsSync(join(root, 'sounds.js')))
+  assert.ok(existsSync(join(root, 'scripts/render-sounds.js')))
 })
 
 test('package metadata is publishable', () => {
